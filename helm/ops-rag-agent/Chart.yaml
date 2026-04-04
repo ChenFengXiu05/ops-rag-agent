@@ -1,0 +1,14 @@
+apiVersion: v2
+name: ops-rag-agent
+description: 运维智能化 RAG Agent Platform
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - rag
+  - llm
+  - ops
+  - aiops
+  - langchain
+maintainers:
+  - name: ops-team
