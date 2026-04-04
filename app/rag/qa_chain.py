@@ -31,7 +31,21 @@ OPS_SYSTEM_PROMPT = """你是一名专业的运维工程师助手。
 @lru_cache(maxsize=1)
 def get_llm() -> BaseChatModel:
     settings = get_settings()
-    if settings.llm_provider == "openai":
+
+    if settings.llm_provider == "vllm":
+        # vLLM 暴露 OpenAI 兼容接口，直接用 ChatOpenAI 对接
+        from langchain_openai import ChatOpenAI
+        model_name = settings.vllm_model or settings.llm_model
+        logger.info(f"Using vLLM at {settings.vllm_base_url}, model={model_name}")
+        return ChatOpenAI(
+            model=model_name,
+            temperature=settings.llm_temperature,
+            max_tokens=settings.llm_max_tokens,
+            openai_api_key=settings.vllm_api_key,
+            openai_api_base=settings.vllm_base_url,
+        )
+
+    elif settings.llm_provider == "openai":
         from langchain_openai import ChatOpenAI
         return ChatOpenAI(
             model=settings.llm_model,
@@ -39,7 +53,8 @@ def get_llm() -> BaseChatModel:
             max_tokens=settings.llm_max_tokens,
             openai_api_key=settings.openai_api_key,
         )
-    else:
+
+    else:  # claude
         from langchain_anthropic import ChatAnthropic
         return ChatAnthropic(
             model=settings.llm_model,

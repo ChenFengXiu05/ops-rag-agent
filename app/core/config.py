@@ -18,10 +18,15 @@ class Settings(BaseSettings):
     # ── LLM ──────────────────────────────────────────────────────────────
     anthropic_api_key: str = ""
     openai_api_key: str = ""
-    llm_provider: Literal["claude", "openai"] = "claude"
+    llm_provider: Literal["claude", "openai", "vllm"] = "claude"
     llm_model: str = "claude-opus-4-6"
     llm_temperature: float = 0.0
     llm_max_tokens: int = 4096
+
+    # ── vLLM (本地部署) ───────────────────────────────────────────────────
+    vllm_base_url: str = "http://localhost:8001/v1"
+    vllm_model: str = ""          # 填 vllm 启动时 --model 指定的模型名
+    vllm_api_key: str = "EMPTY"   # vllm 默认不校验 key，填 EMPTY 即可
 
     # ── Embedding ─────────────────────────────────────────────────────────
     embedding_provider: Literal["bge", "openai"] = "bge"
