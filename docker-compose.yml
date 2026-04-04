@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   # ── Core App ────────────────────────────────────────────────────────────────
   app:
@@ -26,7 +24,7 @@ services:
 
   # ── ChromaDB ─────────────────────────────────────────────────────────────────
   chroma:
-    image: chromadb/chroma:0.5.0
+    image: chromadb/chroma:0.5.3
     container_name: ops-chroma
     ports:
       - "8001:8000"
@@ -37,7 +35,7 @@ services:
 
   # ── Elasticsearch ─────────────────────────────────────────────────────────────
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.13.4
     container_name: ops-elasticsearch
     environment:
       - discovery.type=single-node
@@ -48,16 +46,17 @@ services:
     volumes:
       - es_data:/usr/share/elasticsearch/data
     healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -qE '\"status\":\"(green|yellow)\"'"]
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health | grep -qE '\"status\":\"(green|yellow)\"'"]
       interval: 20s
       timeout: 10s
-      retries: 5
+      retries: 10
+      start_period: 60s
     networks:
       - ops-net
 
   # ── Prometheus ────────────────────────────────────────────────────────────────
   prometheus:
-    image: prom/prometheus:v2.52.0
+    image: prom/prometheus:v2.51.2
     container_name: ops-prometheus
     ports:
       - "9090:9090"
@@ -72,7 +71,7 @@ services:
 
   # ── Grafana ────────────────────────────────────────────────────────────────────
   grafana:
-    image: grafana/grafana:10.4.3
+    image: grafana/grafana:10.3.5
     container_name: ops-grafana
     ports:
       - "3000:3000"
