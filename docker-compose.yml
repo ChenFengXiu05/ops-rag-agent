@@ -1,5 +1,7 @@
 services:
   # ── Core App ────────────────────────────────────────────────────────────────
+  # ChromaDB 运行在嵌入模式（embedded），直接写入容器内 /app/data/chroma
+  # 无需单独启动 chromadb 容器
   app:
     build: .
     container_name: ops-rag-agent
@@ -19,17 +21,6 @@ services:
       elasticsearch:
         condition: service_healthy
     restart: unless-stopped
-    networks:
-      - ops-net
-
-  # ── ChromaDB ─────────────────────────────────────────────────────────────────
-  chroma:
-    image: chromadb/chroma:0.5.3
-    container_name: ops-chroma
-    ports:
-      - "8001:8000"
-    volumes:
-      - chroma_data:/chroma/.chroma
     networks:
       - ops-net
 
@@ -88,7 +79,6 @@ services:
 volumes:
   app_data:
   app_logs:
-  chroma_data:
   es_data:
   prometheus_data:
   grafana_data:
