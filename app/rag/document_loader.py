@@ -6,7 +6,6 @@ from typing import BinaryIO
 from langchain_community.document_loaders import (
     PyPDFLoader,
     TextLoader,
-    UnstructuredMarkdownLoader,
 )
 from langchain_core.documents import Document
 from loguru import logger
@@ -27,9 +26,8 @@ def load_document(file_path: str | Path) -> list[Document]:
 
     if ext == ".pdf":
         loader = PyPDFLoader(str(path))
-    elif ext in (".md", ".markdown"):
-        loader = UnstructuredMarkdownLoader(str(path))
-    else:  # .txt
+    else:
+        # Markdown 和 TXT 都用 TextLoader 直接读取，无需 unstructured
         loader = TextLoader(str(path), encoding="utf-8")
 
     docs = loader.load()
