@@ -103,11 +103,19 @@ async def answer_question(req: AskRequest) -> AskResponse:
     from langchain_core.messages import HumanMessage, SystemMessage
     messages = []
     if req.chat_history:
+        from langchain_core.messages import AIMessage
         for turn in req.chat_history:
-            messages.append(HumanMessage(content=turn["human"]))
-            if "ai" in turn:
-                from langchain_core.messages import AIMessage
-                messages.append(AIMessage(content=turn["ai"]))
+            # Support both {"role":..,"content":..} and {"human":..,"ai":..} formats
+            if "role" in turn:
+                role, content = turn.get("role", ""), turn.get("content", "")
+                if role == "user":
+                    messages.append(HumanMessage(content=content))
+                elif role in ("assistant", "ai"):
+                    messages.append(AIMessage(content=content))
+            elif "human" in turn:
+                messages.append(HumanMessage(content=turn["human"]))
+                if "ai" in turn:
+                    messages.append(AIMessage(content=turn["ai"]))
     messages.append(HumanMessage(content=req.question))
 
     response = await llm.ainvoke(
