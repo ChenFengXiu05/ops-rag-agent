@@ -6,475 +6,150 @@
   <title>运维智能助手 — RAG Agent</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --bg: #0f1117;
-      --surface: #1a1d27;
-      --surface2: #242838;
-      --border: #2e3348;
-      --accent: #6366f1;
-      --accent-hover: #4f52d3;
-      --text: #e2e4f0;
-      --text-dim: #8b8fa8;
-      --user-bg: #1e3a5f;
-      --bot-bg: #1a2535;
-      --success: #22c55e;
-      --danger: #ef4444;
-      --warn: #f59e0b;
+      --bg: #0f1117; --surface: #1a1d27; --surface2: #242838;
+      --border: #2e3348; --accent: #6366f1; --accent-hover: #4f52d3;
+      --text: #e2e4f0; --text-dim: #8b8fa8;
+      --user-bg: #1e3a5f; --bot-bg: #1a2535;
+      --success: #22c55e; --danger: #ef4444; --warn: #f59e0b; --info: #38bdf8;
     }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
 
     /* ── Header ── */
-    header {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 0 20px;
-      height: 52px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-shrink: 0;
-    }
-    header .logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 15px;
-      font-weight: 600;
-    }
-    header .logo span.icon {
-      font-size: 20px;
-    }
-    header .badge {
-      font-size: 11px;
-      background: var(--accent);
-      color: white;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-weight: 500;
-    }
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--text-dim);
-      transition: background 0.3s;
-    }
+    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 20px; height: 52px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .logo { display: flex; align-items: center; gap: 10px; font-size: 15px; font-weight: 600; }
+    .logo .icon { font-size: 20px; }
+    .badge { font-size: 11px; background: var(--accent); color: white; padding: 2px 8px; border-radius: 999px; font-weight: 500; }
+    .header-actions { display: flex; align-items: center; gap: 12px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-dim); transition: background 0.3s; }
     .status-dot.online { background: var(--success); }
     .status-text { font-size: 12px; color: var(--text-dim); }
+    .hdr-btn { background: none; border: 1px solid var(--border); color: var(--text-dim); font-size: 12px; padding: 4px 10px; border-radius: 5px; cursor: pointer; transition: all 0.15s; }
+    .hdr-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+    /* ── Tab bar ── */
+    .tab-bar { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; padding: 0 20px; gap: 4px; }
+    .tab-btn { background: none; border: none; color: var(--text-dim); font-size: 13px; padding: 10px 16px; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; display: flex; align-items: center; gap: 6px; }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+    .tab-content { display: none; flex: 1; overflow: hidden; }
+    .tab-content.active { display: flex; }
 
     /* ── Layout ── */
-    .layout {
-      display: flex;
-      flex: 1;
-      overflow: hidden;
-    }
+    .layout { display: flex; flex: 1; overflow: hidden; flex-direction: column; }
 
     /* ── Sidebar ── */
-    .sidebar {
-      width: 260px;
-      background: var(--surface);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      flex-shrink: 0;
-      overflow-y: auto;
-    }
-    .sidebar-section {
-      padding: 14px 16px 8px;
-    }
-    .sidebar-title {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      margin-bottom: 10px;
-    }
-
-    /* Upload area */
-    .upload-area {
-      border: 1.5px dashed var(--border);
-      border-radius: 8px;
-      padding: 14px;
-      text-align: center;
-      cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
-    }
-    .upload-area:hover {
-      border-color: var(--accent);
-      background: rgba(99,102,241,0.05);
-    }
+    .with-sidebar { display: flex; flex: 1; overflow: hidden; }
+    .sidebar { width: 255px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; flex-shrink: 0; overflow-y: auto; }
+    .sidebar-section { padding: 14px 16px 8px; }
+    .sidebar-title { font-size: 11px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
+    .upload-area { border: 1.5px dashed var(--border); border-radius: 8px; padding: 14px; text-align: center; cursor: pointer; transition: all 0.2s; }
+    .upload-area:hover { border-color: var(--accent); background: rgba(99,102,241,0.05); }
     .upload-area input { display: none; }
     .upload-area .upload-icon { font-size: 22px; margin-bottom: 6px; }
     .upload-area p { font-size: 12px; color: var(--text-dim); line-height: 1.5; }
     .upload-area p strong { color: var(--text); }
-
-    /* File list */
-    .file-list {
-      padding: 0 16px;
-    }
-    .file-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 7px 10px;
-      border-radius: 6px;
-      font-size: 12px;
-      color: var(--text-dim);
-      transition: background 0.15s;
-    }
+    .file-list { padding: 0 16px; }
+    .file-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border-radius: 6px; font-size: 12px; color: var(--text-dim); }
     .file-item:hover { background: var(--surface2); }
-    .file-item .file-icon { font-size: 14px; flex-shrink: 0; }
     .file-item .file-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .file-item .file-status {
-      font-size: 10px;
-      padding: 1px 6px;
-      border-radius: 999px;
-    }
-    .file-item .file-status.ok { background: rgba(34,197,94,0.15); color: var(--success); }
-    .file-item .file-status.uploading { background: rgba(245,158,11,0.15); color: var(--warn); }
-    .file-item .file-status.error { background: rgba(239,68,68,0.15); color: var(--danger); }
-
-    /* Settings */
-    .setting-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 6px 0;
-      font-size: 13px;
-    }
+    .file-item .file-status { font-size: 10px; padding: 1px 6px; border-radius: 999px; }
+    .file-status.ok { background: rgba(34,197,94,0.15); color: var(--success); }
+    .file-status.uploading { background: rgba(245,158,11,0.15); color: var(--warn); }
+    .file-status.error { background: rgba(239,68,68,0.15); color: var(--danger); }
+    .setting-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; font-size: 13px; }
     .setting-row label { color: var(--text-dim); }
-    .setting-row input[type="number"] {
-      width: 56px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text);
-      border-radius: 5px;
-      padding: 3px 7px;
-      font-size: 13px;
-      text-align: right;
-    }
-    .setting-row input[type="checkbox"] {
-      accent-color: var(--accent);
-      width: 15px;
-      height: 15px;
-    }
-
-    /* Quick questions */
-    .quick-btns {
-      display: flex;
-      flex-direction: column;
-      gap: 5px;
-      padding: 0 16px 14px;
-    }
-    .quick-btn {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text-dim);
-      font-size: 12px;
-      padding: 7px 10px;
-      border-radius: 6px;
-      cursor: pointer;
-      text-align: left;
-      transition: all 0.15s;
-      line-height: 1.4;
-    }
-    .quick-btn:hover {
-      border-color: var(--accent);
-      color: var(--text);
-      background: rgba(99,102,241,0.08);
-    }
+    .setting-row input[type="number"] { width: 56px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 5px; padding: 3px 7px; font-size: 13px; text-align: right; }
+    .setting-row input[type="checkbox"] { accent-color: var(--accent); width: 15px; height: 15px; }
+    .quick-btns { display: flex; flex-direction: column; gap: 5px; padding: 0 16px 14px; }
+    .quick-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim); font-size: 12px; padding: 7px 10px; border-radius: 6px; cursor: pointer; text-align: left; transition: all 0.15s; line-height: 1.4; }
+    .quick-btn:hover { border-color: var(--accent); color: var(--text); background: rgba(99,102,241,0.08); }
 
     /* ── Chat area ── */
-    .chat-container {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
-
-    .messages {
-      flex: 1;
-      overflow-y: auto;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-      scroll-behavior: smooth;
-    }
-
+    .chat-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 16px; scroll-behavior: smooth; }
     .messages::-webkit-scrollbar { width: 5px; }
-    .messages::-webkit-scrollbar-track { background: transparent; }
     .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
-
-    /* Welcome screen */
-    .welcome {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      flex: 1;
-      text-align: center;
-      padding: 40px 20px;
-      gap: 12px;
-    }
+    .welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; text-align: center; padding: 40px 20px; gap: 12px; }
     .welcome .logo-big { font-size: 48px; }
     .welcome h2 { font-size: 20px; font-weight: 600; }
-    .welcome p { font-size: 14px; color: var(--text-dim); max-width: 420px; line-height: 1.6; }
+    .welcome p { font-size: 14px; color: var(--text-dim); max-width: 440px; line-height: 1.6; }
     .welcome .tags { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 4px; }
-    .welcome .tag {
-      font-size: 11px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text-dim);
-      padding: 3px 10px;
-      border-radius: 999px;
-    }
-
-    /* Message bubble */
-    .message {
-      display: flex;
-      gap: 10px;
-      max-width: 100%;
-      animation: fadeIn 0.2s ease;
-    }
+    .welcome .tag { font-size: 11px; background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim); padding: 3px 10px; border-radius: 999px; }
+    .message { display: flex; gap: 10px; max-width: 100%; animation: fadeIn 0.2s ease; }
     @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
-
     .message.user { flex-direction: row-reverse; }
     .message.user .bubble { background: var(--user-bg); border-radius: 16px 4px 16px 16px; }
     .message.bot .bubble { background: var(--bot-bg); border-radius: 4px 16px 16px 16px; }
-
-    .avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 15px;
-      flex-shrink: 0;
-      margin-top: 2px;
-    }
+    .avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; margin-top: 2px; }
     .message.user .avatar { background: var(--accent); }
     .message.bot .avatar { background: var(--surface2); border: 1px solid var(--border); }
-
-    .bubble {
-      max-width: 72%;
-      padding: 12px 14px;
-      border: 1px solid var(--border);
-      line-height: 1.65;
-      font-size: 14px;
-    }
+    .bubble { max-width: 72%; padding: 12px 14px; border: 1px solid var(--border); line-height: 1.65; font-size: 14px; }
     .message.user .bubble { max-width: 65%; }
-
-    .bubble pre {
-      background: rgba(0,0,0,0.3);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      overflow-x: auto;
-      font-size: 12px;
-      margin: 8px 0;
-      font-family: "JetBrains Mono", "Fira Code", monospace;
-      position: relative;
-    }
-    .bubble pre code {
-      display: block;
-      padding: 10px 12px;
-      white-space: pre-wrap;
-      word-break: break-word;
-      background: transparent;
-    }
-    .copy-btn {
-      position: absolute;
-      top: 6px;
-      right: 7px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text-dim);
-      font-size: 11px;
-      padding: 2px 8px;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: all 0.15s;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      line-height: 1.6;
-    }
+    .bubble pre { background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: 6px; overflow-x: auto; font-size: 12px; margin: 8px 0; font-family: "JetBrains Mono","Fira Code",monospace; position: relative; }
+    .bubble pre code { display: block; padding: 10px 38px 10px 12px; white-space: pre-wrap; word-break: break-word; background: transparent; }
+    .copy-btn { position: absolute; top: 6px; right: 7px; background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim); font-size: 11px; padding: 2px 8px; border-radius: 4px; cursor: pointer; transition: all 0.15s; }
     .copy-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
     .copy-btn.copied { background: var(--success); color: white; border-color: var(--success); }
-    .bubble code {
-      font-family: "JetBrains Mono", "Fira Code", monospace;
-      font-size: 12px;
-      background: rgba(0,0,0,0.25);
-      padding: 1px 5px;
-      border-radius: 3px;
-    }
-
-    /* Typing indicator */
-    .typing-indicator {
-      display: flex;
-      gap: 4px;
-      align-items: center;
-      padding: 4px 0;
-    }
-    .typing-indicator span {
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: var(--text-dim);
-      animation: bounce 1.2s infinite;
-    }
+    .bubble code { font-family: "JetBrains Mono","Fira Code",monospace; font-size: 12px; background: rgba(0,0,0,0.25); padding: 1px 5px; border-radius: 3px; }
+    .typing-indicator { display: flex; gap: 4px; align-items: center; padding: 4px 0; }
+    .typing-indicator span { width: 7px; height: 7px; border-radius: 50%; background: var(--text-dim); animation: bounce 1.2s infinite; }
     .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
     .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes bounce {
-      0%, 80%, 100% { transform: scale(0.7); opacity: 0.5; }
-      40% { transform: scale(1); opacity: 1; }
-    }
-
-    /* Sources panel */
-    .sources {
-      margin-top: 10px;
-      border-top: 1px solid var(--border);
-      padding-top: 8px;
-    }
-    .sources-title {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-dim);
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      margin-bottom: 6px;
-    }
-    .source-item {
-      font-size: 12px;
-      color: var(--text-dim);
-      background: rgba(0,0,0,0.2);
-      border-radius: 5px;
-      padding: 6px 9px;
-      margin-bottom: 5px;
-      border-left: 2px solid var(--accent);
-    }
-    .source-item .source-file {
-      font-weight: 600;
-      color: var(--accent);
-      margin-bottom: 2px;
-    }
-    .source-item .source-excerpt {
-      line-height: 1.4;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-
-    .meta-row {
-      display: flex;
-      gap: 12px;
-      margin-top: 8px;
-      font-size: 11px;
-      color: var(--text-dim);
-    }
-    .meta-row span { display: flex; align-items: center; gap: 3px; }
-
-    /* ── Input area ── */
-    .input-area {
-      padding: 14px 20px 16px;
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-      flex-shrink: 0;
-    }
-    .input-row {
-      display: flex;
-      gap: 10px;
-      align-items: flex-end;
-    }
-    .input-row textarea {
-      flex: 1;
-      background: var(--surface2);
-      border: 1.5px solid var(--border);
-      color: var(--text);
-      border-radius: 10px;
-      padding: 10px 14px;
-      font-size: 14px;
-      font-family: inherit;
-      resize: none;
-      min-height: 44px;
-      max-height: 160px;
-      line-height: 1.5;
-      transition: border-color 0.2s;
-      overflow-y: hidden;
-    }
-    .input-row textarea:focus {
-      outline: none;
-      border-color: var(--accent);
-    }
+    @keyframes bounce { 0%,80%,100% { transform:scale(0.7); opacity:0.5; } 40% { transform:scale(1); opacity:1; } }
+    .sources { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 8px; }
+    .sources-title { font-size: 11px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+    .source-item { font-size: 12px; color: var(--text-dim); background: rgba(0,0,0,0.2); border-radius: 5px; padding: 6px 9px; margin-bottom: 5px; border-left: 2px solid var(--accent); }
+    .source-item .source-file { font-weight: 600; color: var(--accent); margin-bottom: 2px; }
+    .source-item .source-excerpt { line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .meta-row { display: flex; gap: 12px; margin-top: 8px; font-size: 11px; color: var(--text-dim); }
+    .agent-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; background: rgba(99,102,241,0.15); color: var(--accent); border: 1px solid rgba(99,102,241,0.3); padding: 2px 8px; border-radius: 999px; margin-bottom: 6px; }
+    .approval-banner { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.4); border-radius: 8px; padding: 10px 12px; margin-top: 8px; font-size: 13px; color: var(--warn); }
+    .input-area { padding: 14px 20px 16px; background: var(--surface); border-top: 1px solid var(--border); flex-shrink: 0; }
+    .input-row { display: flex; gap: 10px; align-items: flex-end; }
+    .input-row textarea { flex: 1; background: var(--surface2); border: 1.5px solid var(--border); color: var(--text); border-radius: 10px; padding: 10px 14px; font-size: 14px; font-family: inherit; resize: none; min-height: 44px; max-height: 160px; line-height: 1.5; transition: border-color 0.2s; overflow-y: hidden; }
+    .input-row textarea:focus { outline: none; border-color: var(--accent); }
     .input-row textarea::placeholder { color: var(--text-dim); }
-
-    .send-btn {
-      background: var(--accent);
-      border: none;
-      color: white;
-      width: 44px;
-      height: 44px;
-      border-radius: 10px;
-      cursor: pointer;
-      font-size: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      transition: background 0.15s, transform 0.1s;
-    }
+    .send-btn { background: var(--accent); border: none; color: white; width: 44px; height: 44px; border-radius: 10px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.15s, transform 0.1s; }
     .send-btn:hover { background: var(--accent-hover); }
     .send-btn:active { transform: scale(0.95); }
     .send-btn:disabled { background: var(--border); cursor: not-allowed; }
-
-    .input-hint {
-      font-size: 11px;
-      color: var(--text-dim);
-      margin-top: 6px;
-      padding-left: 2px;
-    }
-
-    /* Clear chat btn */
-    .clear-btn {
-      background: none;
-      border: 1px solid var(--border);
-      color: var(--text-dim);
-      font-size: 12px;
-      padding: 4px 10px;
-      border-radius: 5px;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .clear-btn:hover { border-color: var(--danger); color: var(--danger); }
-
-    /* Upload progress */
-    .upload-progress {
-      margin-top: 8px;
-      font-size: 12px;
-      color: var(--text-dim);
-      padding: 6px 10px;
-      background: var(--surface2);
-      border-radius: 6px;
-      display: none;
-    }
+    .input-hint { font-size: 11px; color: var(--text-dim); margin-top: 6px; padding-left: 2px; }
+    .upload-progress { margin-top: 8px; font-size: 12px; color: var(--text-dim); padding: 6px 10px; background: var(--surface2); border-radius: 6px; display: none; }
     .upload-progress.show { display: block; }
+
+    /* ── K8s Cluster tab ── */
+    .cluster-layout { display: flex; flex: 1; overflow: hidden; flex-direction: column; }
+    .cluster-toolbar { display: flex; align-items: center; gap: 10px; padding: 12px 20px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .cluster-toolbar select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 5px 10px; border-radius: 6px; font-size: 13px; }
+    .refresh-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim); padding: 5px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; gap: 6px; }
+    .refresh-btn:hover { border-color: var(--accent); color: var(--text); }
+    .refresh-btn.spinning .spin-icon { display: inline-block; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .cluster-body { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 16px; }
+    .cluster-body::-webkit-scrollbar { width: 5px; }
+    .cluster-body::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+    .cluster-section { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .cluster-section-header { padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+    .cluster-section-title { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .cluster-count { font-size: 11px; color: var(--text-dim); background: var(--surface2); padding: 1px 8px; border-radius: 999px; }
+    .k8s-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .k8s-table th { padding: 8px 12px; text-align: left; color: var(--text-dim); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.15); }
+    .k8s-table td { padding: 8px 12px; border-bottom: 1px solid rgba(46,51,72,0.5); vertical-align: middle; }
+    .k8s-table tr:last-child td { border-bottom: none; }
+    .k8s-table tr:hover td { background: rgba(99,102,241,0.04); }
+    .pill { display: inline-flex; align-items: center; gap: 3px; font-size: 11px; padding: 2px 8px; border-radius: 999px; font-weight: 500; white-space: nowrap; }
+    .pill.ready, .pill.running { background: rgba(34,197,94,0.12); color: var(--success); }
+    .pill.notready, .pill.failed, .pill.unknown { background: rgba(239,68,68,0.12); color: var(--danger); }
+    .pill.pending { background: rgba(245,158,11,0.12); color: var(--warn); }
+    .pill.crashloop, .pill.oomkilled, .pill.error { background: rgba(239,68,68,0.12); color: var(--danger); }
+    .pill.completed, .pill.succeeded { background: rgba(56,189,248,0.12); color: var(--info); }
+    .pill.terminating { background: rgba(139,143,168,0.15); color: var(--text-dim); }
+    .cluster-empty { padding: 32px; text-align: center; color: var(--text-dim); font-size: 13px; }
+    .cluster-error { padding: 16px; color: var(--danger); font-size: 13px; display: flex; align-items: center; gap: 8px; }
+    .last-updated { font-size: 11px; color: var(--text-dim); }
+    .ns-filter { display: flex; align-items: center; gap: 6px; }
+    .ns-filter label { font-size: 12px; color: var(--text-dim); }
   </style>
 </head>
 <body>
@@ -488,104 +163,164 @@
   <div class="header-actions">
     <div class="status-dot" id="statusDot"></div>
     <span class="status-text" id="statusText">检查连接中…</span>
-    <button class="clear-btn" onclick="clearChat()">清空对话</button>
+    <button class="hdr-btn" onclick="clearChat()">清空对话</button>
   </div>
 </header>
 
+<!-- Tab bar -->
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="switchTab('rag')" id="tab-rag">📚 知识库问答</button>
+  <button class="tab-btn" onclick="switchTab('agent')" id="tab-agent">🤖 K8s Agent</button>
+  <button class="tab-btn" onclick="switchTab('cluster')" id="tab-cluster">☸️ 集群状态</button>
+</div>
+
 <div class="layout">
 
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <!-- Upload -->
-    <div class="sidebar-section">
-      <div class="sidebar-title">📁 知识库文档</div>
-      <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
-        <input type="file" id="fileInput" accept=".txt,.md,.pdf" multiple onchange="handleUpload(this.files)" />
-        <div class="upload-icon">📤</div>
-        <p><strong>点击上传文档</strong><br/>支持 .txt · .md · .pdf</p>
-      </div>
-      <div class="upload-progress" id="uploadProgress"></div>
-    </div>
-
-    <div class="file-list" id="fileList"></div>
-
-    <!-- Settings -->
-    <div class="sidebar-section" style="margin-top:4px;">
-      <div class="sidebar-title">⚙️ 检索参数</div>
-      <div class="setting-row">
-        <label>召回 Top-K</label>
-        <input type="number" id="topK" value="5" min="1" max="20" />
-      </div>
-      <div class="setting-row">
-        <label>使用重排序</label>
-        <input type="checkbox" id="useReranker" />
-      </div>
-    </div>
-
-    <!-- Quick questions -->
-    <div class="sidebar-section">
-      <div class="sidebar-title">💡 快捷问题</div>
-    </div>
-    <div class="quick-btns">
-      <button class="quick-btn" onclick="sendQuick('Kubernetes Pod 处于 CrashLoopBackOff 状态如何排查？')">K8s Pod CrashLoopBackOff 排查</button>
-      <button class="quick-btn" onclick="sendQuick('Linux 服务器 CPU 使用率过高如何处理？')">Linux CPU 使用率高处理</button>
-      <button class="quick-btn" onclick="sendQuick('MySQL 数据库如何做全量备份？')">MySQL 全量备份步骤</button>
-      <button class="quick-btn" onclick="sendQuick('Nginx 502 Bad Gateway 怎么排查？')">Nginx 502 故障排查</button>
-      <button class="quick-btn" onclick="sendQuick('Prometheus 告警 NodeMemoryUsageHigh 如何处理？')">内存告警处理流程</button>
-      <button class="quick-btn" onclick="sendQuick('如何查看 Kubernetes Pod 的日志？')">如何查看 Pod 日志</button>
-    </div>
-  </aside>
-
-  <!-- Chat -->
-  <div class="chat-container">
-    <div class="messages" id="messages">
-      <div class="welcome" id="welcome">
-        <div class="logo-big">🛠️</div>
-        <h2>运维智能助手</h2>
-        <p>基于 RAG 技术的运维知识问答系统，支持 K8s、Linux、MySQL、Nginx 等场景的智能检索与解答。</p>
-        <div class="tags">
-          <span class="tag">Kubernetes</span>
-          <span class="tag">Linux 巡检</span>
-          <span class="tag">MySQL 备份</span>
-          <span class="tag">Nginx 故障</span>
-          <span class="tag">监控告警</span>
-          <span class="tag">SOP 文档检索</span>
+  <!-- ════════════ TAB 1: RAG 问答 ════════════ -->
+  <div class="tab-content active" id="content-rag">
+    <div class="with-sidebar">
+      <aside class="sidebar">
+        <div class="sidebar-section">
+          <div class="sidebar-title">📁 知识库文档</div>
+          <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+            <input type="file" id="fileInput" accept=".txt,.md,.pdf" multiple onchange="handleUpload(this.files)" />
+            <div class="upload-icon">📤</div>
+            <p><strong>点击上传文档</strong><br/>支持 .txt · .md · .pdf</p>
+          </div>
+          <div class="upload-progress" id="uploadProgress"></div>
+        </div>
+        <div class="file-list" id="fileList"></div>
+        <div class="sidebar-section" style="margin-top:4px;">
+          <div class="sidebar-title">⚙️ 检索参数</div>
+          <div class="setting-row"><label>召回 Top-K</label><input type="number" id="topK" value="5" min="1" max="20" /></div>
+          <div class="setting-row"><label>使用重排序</label><input type="checkbox" id="useReranker" /></div>
+        </div>
+        <div class="sidebar-section"><div class="sidebar-title">💡 快捷问题</div></div>
+        <div class="quick-btns">
+          <button class="quick-btn" onclick="sendQuick('rag','Kubernetes Pod 处于 CrashLoopBackOff 状态如何排查？')">K8s Pod CrashLoopBackOff 排查</button>
+          <button class="quick-btn" onclick="sendQuick('rag','Linux 服务器 CPU 使用率过高如何处理？')">Linux CPU 使用率高处理</button>
+          <button class="quick-btn" onclick="sendQuick('rag','MySQL 数据库如何做全量备份？')">MySQL 全量备份步骤</button>
+          <button class="quick-btn" onclick="sendQuick('rag','Nginx 502 Bad Gateway 怎么排查？')">Nginx 502 故障排查</button>
+          <button class="quick-btn" onclick="sendQuick('rag','Prometheus 告警 NodeMemoryUsageHigh 如何处理？')">内存告警处理流程</button>
+          <button class="quick-btn" onclick="sendQuick('rag','如何查看 Kubernetes Pod 的日志？')">如何查看 Pod 日志</button>
+        </div>
+      </aside>
+      <div class="chat-container">
+        <div class="messages" id="rag-messages">
+          <div class="welcome" id="rag-welcome">
+            <div class="logo-big">🛠️</div>
+            <h2>运维知识库问答</h2>
+            <p>基于 RAG 技术，从 SOP 文档中检索并生成回答。支持 K8s、Linux、MySQL、Nginx 等运维场景。</p>
+            <div class="tags">
+              <span class="tag">Kubernetes</span><span class="tag">Linux 巡检</span>
+              <span class="tag">MySQL 备份</span><span class="tag">Nginx 故障</span>
+              <span class="tag">监控告警</span><span class="tag">SOP 检索</span>
+            </div>
+          </div>
+        </div>
+        <div class="input-area">
+          <div class="input-row">
+            <textarea id="ragInput" placeholder="输入运维问题，按 Enter 发送，Shift+Enter 换行…" rows="1" onkeydown="handleKey(event,'rag')" oninput="autoResize(this)"></textarea>
+            <button class="send-btn" id="ragSendBtn" onclick="sendMessage('rag')" title="发送">➤</button>
+          </div>
+          <div class="input-hint">Powered by minimax-m2.5 · ChromaDB · BGE-large-zh</div>
         </div>
       </div>
     </div>
+  </div>
 
-    <div class="input-area">
-      <div class="input-row">
-        <textarea
-          id="questionInput"
-          placeholder="输入运维问题，按 Enter 发送，Shift+Enter 换行…"
-          rows="1"
-          onkeydown="handleKey(event)"
-          oninput="autoResize(this)"
-        ></textarea>
-        <button class="send-btn" id="sendBtn" onclick="sendMessage()" title="发送">
-          ➤
-        </button>
+  <!-- ════════════ TAB 2: K8s Agent ════════════ -->
+  <div class="tab-content" id="content-agent">
+    <div class="with-sidebar">
+      <aside class="sidebar">
+        <div class="sidebar-section">
+          <div class="sidebar-title">🤖 Agent 能力</div>
+          <div style="font-size:12px;color:var(--text-dim);line-height:1.7;padding:4px 0;">
+            <div>🔍 kubectl get / describe</div>
+            <div>📋 kubectl logs</div>
+            <div>📊 Prometheus 查询</div>
+            <div>🔎 ES 日志检索</div>
+            <div>⚠️ 高危操作需审批</div>
+          </div>
+        </div>
+        <div class="sidebar-section">
+          <div class="sidebar-title">💡 快捷指令</div>
+        </div>
+        <div class="quick-btns">
+          <button class="quick-btn" onclick="sendQuick('agent','查看所有命名空间下的 Pod 状态')">查看所有 Pod 状态</button>
+          <button class="quick-btn" onclick="sendQuick('agent','查看集群所有节点状态和资源使用情况')">查看节点资源情况</button>
+          <button class="quick-btn" onclick="sendQuick('agent','找出所有 CrashLoopBackOff 或 Error 状态的 Pod 并查看日志')">找出异常 Pod 并查日志</button>
+          <button class="quick-btn" onclick="sendQuick('agent','查看 kube-system 命名空间下的所有服务')">查看系统服务列表</button>
+          <button class="quick-btn" onclick="sendQuick('agent','查看各节点的资源分配情况（CPU/内存）')">节点资源分配详情</button>
+          <button class="quick-btn" onclick="sendQuick('agent','查看最近有重启记录的 Pod')">查看最近重启的 Pod</button>
+        </div>
+      </aside>
+      <div class="chat-container">
+        <div class="messages" id="agent-messages">
+          <div class="welcome" id="agent-welcome">
+            <div class="logo-big">☸️</div>
+            <h2>K8s 智能 Agent</h2>
+            <p>Agent 可以直接调用 kubectl 工具操作你的集群，查看 Pod、节点、日志等信息，并给出分析和建议。</p>
+            <div class="tags">
+              <span class="tag">kubectl get/describe</span>
+              <span class="tag">Pod 日志</span>
+              <span class="tag">节点状态</span>
+              <span class="tag">故障分析</span>
+            </div>
+          </div>
+        </div>
+        <div class="input-area">
+          <div class="input-row">
+            <textarea id="agentInput" placeholder="告诉 Agent 你想做什么，例如：查看所有 Pod 状态…" rows="1" onkeydown="handleKey(event,'agent')" oninput="autoResize(this)"></textarea>
+            <button class="send-btn" id="agentSendBtn" onclick="sendMessage('agent')" title="发送">➤</button>
+          </div>
+          <div class="input-hint">Agent 模式 · 直接调用 kubectl · 高危操作需人工审批</div>
+        </div>
       </div>
-      <div class="input-hint">Powered by minimax-m2.5 · ChromaDB · BGE-large-zh</div>
     </div>
   </div>
 
-</div>
+  <!-- ════════════ TAB 3: 集群状态 ════════════ -->
+  <div class="tab-content" id="content-cluster">
+    <div class="cluster-layout">
+      <div class="cluster-toolbar">
+        <span style="font-size:13px;font-weight:600;">☸️ 集群实时状态</span>
+        <div class="ns-filter">
+          <label>命名空间</label>
+          <select id="nsFilter" onchange="loadCluster()">
+            <option value="">全部</option>
+            <option value="default">default</option>
+            <option value="kube-system">kube-system</option>
+          </select>
+        </div>
+        <button class="refresh-btn" id="refreshBtn" onclick="loadCluster()">
+          <span class="spin-icon">🔄</span> 刷新
+        </button>
+        <span class="last-updated" id="lastUpdated"></span>
+        <div style="flex:1"></div>
+        <button class="refresh-btn" onclick="sendQuick('agent','分析当前集群状态，找出需要关注的问题并给出建议');switchTab('agent')">🤖 让 Agent 分析集群</button>
+      </div>
+      <div class="cluster-body" id="clusterBody">
+        <div class="cluster-empty">点击「刷新」加载集群状态</div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- .layout -->
 
 <script>
 const API_BASE = window.location.origin;
-let chatHistory = [];
-let uploadedFiles = [];
-let isWaiting = false;
+let ragHistory = [], agentHistory = [];
+let isWaiting = { rag: false, agent: false };
+let currentTab = 'rag';
 
-// ── Health check ────────────────────────────────────────────────────────────
+// ── Health check ──────────────────────────────────────────────────────────────
 async function checkHealth() {
   try {
-    const res = await fetch(`${API_BASE}/health`);
-    const data = await res.json();
+    const r = await fetch(`${API_BASE}/health`);
+    const d = await r.json();
     document.getElementById('statusDot').className = 'status-dot online';
-    document.getElementById('statusText').textContent = `${data.llm_provider} · ${data.vector_store}`;
+    document.getElementById('statusText').textContent = `${d.llm_provider} · ${d.vector_store}`;
   } catch {
     document.getElementById('statusDot').className = 'status-dot';
     document.getElementById('statusText').textContent = '连接失败';
@@ -594,327 +329,374 @@ async function checkHealth() {
 checkHealth();
 setInterval(checkHealth, 30000);
 
-// ── Auto resize textarea ─────────────────────────────────────────────────────
-function autoResize(el) {
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 160) + 'px';
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('content-' + tab).classList.add('active');
+  if (tab === 'cluster') loadCluster();
 }
 
-// ── Key handler ──────────────────────────────────────────────────────────────
-function handleKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 160) + 'px'; }
+
+function handleKey(e, mode) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(mode); }
+}
+
+function sendQuick(mode, text) {
+  const inputId = mode === 'rag' ? 'ragInput' : 'agentInput';
+  document.getElementById(inputId).value = text;
+  if (currentTab !== mode) switchTab(mode);
+  sendMessage(mode);
+}
+
+function clearChat() {
+  ragHistory = []; agentHistory = [];
+  resetMessages('rag');
+  resetMessages('agent');
+}
+
+function resetMessages(mode) {
+  const msgs = document.getElementById(mode + '-messages');
+  if (mode === 'rag') {
+    msgs.innerHTML = `<div class="welcome" id="rag-welcome"><div class="logo-big">🛠️</div><h2>运维知识库问答</h2><p>基于 RAG 技术，从 SOP 文档中检索并生成回答。</p></div>`;
+  } else {
+    msgs.innerHTML = `<div class="welcome" id="agent-welcome"><div class="logo-big">☸️</div><h2>K8s 智能 Agent</h2><p>Agent 可以直接调用 kubectl 操作你的集群。</p></div>`;
   }
 }
 
-// ── Send quick question ──────────────────────────────────────────────────────
-function sendQuick(text) {
-  document.getElementById('questionInput').value = text;
-  sendMessage();
-}
-
-// ── Clear chat ───────────────────────────────────────────────────────────────
-function clearChat() {
-  chatHistory = [];
-  const msgs = document.getElementById('messages');
-  msgs.innerHTML = `
-    <div class="welcome" id="welcome">
-      <div class="logo-big">🛠️</div>
-      <h2>运维智能助手</h2>
-      <p>基于 RAG 技术的运维知识问答系统，支持 K8s、Linux、MySQL、Nginx 等场景的智能检索与解答。</p>
-      <div class="tags">
-        <span class="tag">Kubernetes</span>
-        <span class="tag">Linux 巡检</span>
-        <span class="tag">MySQL 备份</span>
-        <span class="tag">Nginx 故障</span>
-        <span class="tag">监控告警</span>
-        <span class="tag">SOP 文档检索</span>
-      </div>
-    </div>`;
-}
-
-// ── Send message ─────────────────────────────────────────────────────────────
-async function sendMessage() {
-  const input = document.getElementById('questionInput');
+// ── Send message ──────────────────────────────────────────────────────────────
+async function sendMessage(mode) {
+  const inputId = mode === 'rag' ? 'ragInput' : 'agentInput';
+  const sendBtnId = mode === 'rag' ? 'ragSendBtn' : 'agentSendBtn';
+  const input = document.getElementById(inputId);
   const question = input.value.trim();
-  if (!question || isWaiting) return;
+  if (!question || isWaiting[mode]) return;
 
-  // Remove welcome screen
-  const welcome = document.getElementById('welcome');
+  const welcome = document.getElementById(mode + '-welcome');
   if (welcome) welcome.remove();
 
-  isWaiting = true;
-  document.getElementById('sendBtn').disabled = true;
+  isWaiting[mode] = true;
+  document.getElementById(sendBtnId).disabled = true;
   input.value = '';
   input.style.height = 'auto';
 
-  appendMessage('user', question, null, null);
-
-  // Typing indicator
-  const typingId = 'typing_' + Date.now();
-  appendTyping(typingId);
+  appendMessage(mode, 'user', question, null, null);
+  const typingId = appendTyping(mode);
 
   try {
-    const topK = parseInt(document.getElementById('topK').value) || 5;
-    const useReranker = document.getElementById('useReranker').checked;
-
-    const payload = {
-      question,
-      collection_name: 'ops_knowledge',
-      top_k: topK,
-      use_reranker: useReranker,
-      chat_history: chatHistory.slice(-10),
-    };
-
-    const res = await fetch(`${API_BASE}/api/v1/ask`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-
-    removeTyping(typingId);
-
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({ detail: res.statusText }));
-      appendMessage('bot', `❌ 请求失败：${err.detail || res.statusText}`, null, null);
+    if (mode === 'rag') {
+      await sendRag(mode, question, typingId);
     } else {
-      const data = await res.json();
-      appendMessage('bot', data.answer, data.sources, {
-        tokens: data.tokens_used,
-        latency: data.latency_ms,
-      });
-      chatHistory.push({ role: 'user', content: question });
-      chatHistory.push({ role: 'assistant', content: data.answer });
+      await sendAgent(mode, question, typingId);
     }
   } catch (e) {
     removeTyping(typingId);
-    appendMessage('bot', `❌ 网络错误：${e.message}`, null, null);
+    appendMessage(mode, 'bot', `❌ 网络错误：${e.message}`, null, null);
   }
 
-  isWaiting = false;
-  document.getElementById('sendBtn').disabled = false;
+  isWaiting[mode] = false;
+  document.getElementById(sendBtnId).disabled = false;
   input.focus();
 }
 
-// ── Append message ───────────────────────────────────────────────────────────
-function appendMessage(role, text, sources, meta) {
-  const msgs = document.getElementById('messages');
+async function sendRag(mode, question, typingId) {
+  const topK = parseInt(document.getElementById('topK').value) || 5;
+  const useReranker = document.getElementById('useReranker').checked;
+  const res = await fetch(`${API_BASE}/api/v1/ask`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      question, collection_name: 'ops_knowledge',
+      top_k: topK, use_reranker: useReranker,
+      chat_history: ragHistory.slice(-10),
+    }),
+  });
+  removeTyping(typingId);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    appendMessage(mode, 'bot', `❌ 请求失败：${err.detail || res.statusText}`, null, null);
+    return;
+  }
+  const data = await res.json();
+  appendMessage(mode, 'bot', data.answer, data.sources, { tokens: data.tokens_used, latency: data.latency_ms });
+  ragHistory.push({ role: 'user', content: question });
+  ragHistory.push({ role: 'assistant', content: data.answer });
+}
+
+async function sendAgent(mode, question, typingId) {
+  const res = await fetch(`${API_BASE}/api/v1/agent/run`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question, alert_context: '' }),
+  });
+  removeTyping(typingId);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: res.statusText }));
+    appendMessage(mode, 'bot', `❌ Agent 执行失败：${err.detail || res.statusText}`, null, null);
+    return;
+  }
+  const data = await res.json();
+  const meta = { actions: data.action_count, requires_approval: data.requires_approval, approval_id: data.approval_id };
+  appendMessage(mode, 'bot', data.answer, null, meta, true);
+}
+
+// ── Message rendering ─────────────────────────────────────────────────────────
+function appendMessage(mode, role, text, sources, meta, isAgent = false) {
+  const msgs = document.getElementById(mode + '-messages');
   const div = document.createElement('div');
   div.className = `message ${role}`;
-
-  const avatar = role === 'user' ? '👤' : '🤖';
-  // formatText handles its own escaping; only escape for user bubbles (no markdown needed)
+  const avatar = role === 'user' ? '👤' : (isAgent ? '🤖' : '🔍');
   const formatted = role === 'user' ? escapeHtml(text).replace(/\n/g, '<br/>') : formatText(text);
 
   let sourcesHtml = '';
-  if (sources && sources.length > 0) {
+  if (sources && sources.length) {
     const items = sources.slice(0, 4).map(s => {
-      const file = s.metadata?.file_name || s.metadata?.source || '文档';
-      const fname = file.split('/').pop().split('\\').pop();
+      const file = (s.metadata?.file_name || s.metadata?.source || '文档').split(/[/\\]/).pop();
       const excerpt = escapeHtml((s.content || '').substring(0, 120));
-      return `<div class="source-item">
-        <div class="source-file">📄 ${escapeHtml(fname)}</div>
-        <div class="source-excerpt">${excerpt}…</div>
-      </div>`;
+      return `<div class="source-item"><div class="source-file">📄 ${escapeHtml(file)}</div><div class="source-excerpt">${excerpt}…</div></div>`;
     }).join('');
-    sourcesHtml = `<div class="sources">
-      <div class="sources-title">参考来源 (${sources.length})</div>
-      ${items}
-    </div>`;
+    sourcesHtml = `<div class="sources"><div class="sources-title">参考来源 (${sources.length})</div>${items}</div>`;
   }
 
   let metaHtml = '';
   if (meta) {
-    metaHtml = `<div class="meta-row">
-      ${meta.tokens ? `<span>🔤 ${meta.tokens} tokens</span>` : ''}
-      ${meta.latency ? `<span>⏱ ${meta.latency.toFixed(0)}ms</span>` : ''}
-    </div>`;
+    if (isAgent) {
+      const badge = `<div class="agent-badge">⚡ Agent · ${meta.actions || 0} 次工具调用</div>`;
+      const approval = meta.requires_approval
+        ? `<div class="approval-banner">⚠️ 高危操作等待审批 · ID: ${meta.approval_id}</div>` : '';
+      metaHtml = badge + approval;
+    } else {
+      metaHtml = `<div class="meta-row">${meta.tokens ? `<span>🔤 ${meta.tokens} tokens</span>` : ''}${meta.latency ? `<span>⏱ ${meta.latency.toFixed(0)}ms</span>` : ''}</div>`;
+    }
   }
 
-  div.innerHTML = `
-    <div class="avatar">${avatar}</div>
-    <div class="bubble">
-      ${formatted}
-      ${sourcesHtml}
-      ${metaHtml}
-    </div>`;
-
+  div.innerHTML = `<div class="avatar">${avatar}</div><div class="bubble">${isAgent ? metaHtml : ''}${formatted}${sourcesHtml}${isAgent ? '' : metaHtml}</div>`;
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
 }
 
-function appendTyping(id) {
-  const msgs = document.getElementById('messages');
+function appendTyping(mode) {
+  const id = 'typing_' + Date.now();
+  const msgs = document.getElementById(mode + '-messages');
   const div = document.createElement('div');
-  div.className = 'message bot';
-  div.id = id;
-  div.innerHTML = `
-    <div class="avatar">🤖</div>
-    <div class="bubble">
-      <div class="typing-indicator">
-        <span></span><span></span><span></span>
-      </div>
-    </div>`;
+  div.className = 'message bot'; div.id = id;
+  div.innerHTML = `<div class="avatar">⏳</div><div class="bubble"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
+  return id;
 }
+function removeTyping(id) { const el = document.getElementById(id); if (el) el.remove(); }
 
-function removeTyping(id) {
-  const el = document.getElementById(id);
-  if (el) el.remove();
+// ── Text formatting ───────────────────────────────────────────────────────────
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+function stripThink(t) { return t.replace(/<think>[\s\S]*?<\/think>/gi,'').trim(); }
 
-// ── Text formatting ──────────────────────────────────────────────────────────
-function escapeHtml(str) {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
-function stripThink(text) {
-  // Remove <think>...</think> blocks (model reasoning, not shown to user)
-  return text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
-}
-
-function formatText(rawText) {
-  // 1. Strip model thinking blocks
-  let text = stripThink(rawText);
-
-  // 2. Escape HTML (except we handle code blocks specially)
-  // Split on code fences first to avoid escaping code content incorrectly
+function formatText(raw) {
+  let text = stripThink(raw);
   const parts = text.split(/(```[\s\S]*?```)/g);
-  let html = parts.map((part, i) => {
+  return parts.map((part, i) => {
     if (i % 2 === 1) {
-      // Code block — extract optional lang and code body
-      const match = part.match(/^```(\w*)\n?([\s\S]*?)```$/);
-      const lang = match ? match[1] : '';
-      const code = match ? match[2].trim() : part.slice(3, -3).trim();
-      const escaped = escapeHtml(code);
-      const id = 'cb_' + Math.random().toString(36).substr(2, 8);
-      return `<div style="position:relative">` +
-        `<pre><code id="${id}">${escaped}</code></pre>` +
-        `<button class="copy-btn" onclick="copyCode('${id}', this)" title="复制代码">` +
-        `📋 复制</button></div>`;
-    } else {
-      let t = escapeHtml(part);
-      // Inline code
-      t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
-      // Bold
-      t = t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-      // Headers
-      t = t.replace(/^### (.+)$/gm, '<strong style="font-size:13px;color:var(--text)">$1</strong>');
-      t = t.replace(/^## (.+)$/gm, '<strong style="font-size:14px;color:var(--text)">$1</strong>');
-      t = t.replace(/^# (.+)$/gm, '<strong style="font-size:15px;color:var(--text)">$1</strong>');
-      // Numbered list
-      t = t.replace(/^\d+\. (.+)$/gm, '<span style="display:block;padding-left:1.2em;text-indent:-1.2em">$&</span>');
-      // Line breaks
-      t = t.replace(/\n/g, '<br/>');
-      return t;
+      const m = part.match(/^```(\w*)\n?([\s\S]*?)```$/);
+      const code = m ? m[2].trim() : part.slice(3,-3).trim();
+      const id = 'cb_' + Math.random().toString(36).substr(2,8);
+      return `<div style="position:relative"><pre><code id="${id}">${escapeHtml(code)}</code></pre><button class="copy-btn" onclick="copyCode('${id}',this)">📋 复制</button></div>`;
     }
+    let t = escapeHtml(part);
+    t = t.replace(/`([^`]+)`/g,'<code>$1</code>');
+    t = t.replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+    t = t.replace(/^### (.+)$/gm,'<strong style="font-size:13px;color:var(--text)">$1</strong>');
+    t = t.replace(/^## (.+)$/gm,'<strong style="font-size:14px;color:var(--text)">$1</strong>');
+    t = t.replace(/^# (.+)$/gm,'<strong style="font-size:15px;color:var(--text)">$1</strong>');
+    t = t.replace(/\n/g,'<br/>');
+    return t;
   }).join('');
-
-  return html;
 }
 
 function copyCode(id, btn) {
   const el = document.getElementById(id);
   if (!el) return;
   navigator.clipboard.writeText(el.innerText).then(() => {
-    btn.classList.add('copied');
-    btn.textContent = '✓ 已复制';
-    setTimeout(() => {
-      btn.classList.remove('copied');
-      btn.innerHTML = '📋 复制';
-    }, 2000);
+    btn.classList.add('copied'); btn.textContent = '✓ 已复制';
+    setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = '📋 复制'; }, 2000);
   }).catch(() => {
-    // fallback for older browsers
-    const range = document.createRange();
-    range.selectNodeContents(el);
-    window.getSelection().removeAllRanges();
-    window.getSelection().addRange(range);
-    document.execCommand('copy');
-    window.getSelection().removeAllRanges();
-    btn.classList.add('copied');
-    btn.textContent = '✓ 已复制';
+    const r = document.createRange(); r.selectNodeContents(el);
+    window.getSelection().removeAllRanges(); window.getSelection().addRange(r);
+    document.execCommand('copy'); window.getSelection().removeAllRanges();
+    btn.classList.add('copied'); btn.textContent = '✓ 已复制';
     setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = '📋 复制'; }, 2000);
   });
 }
 
-// ── File upload ──────────────────────────────────────────────────────────────
+// ── File upload ───────────────────────────────────────────────────────────────
 async function handleUpload(files) {
   const progress = document.getElementById('uploadProgress');
   const fileList = document.getElementById('fileList');
-
   for (const file of files) {
-    const itemId = 'file_' + Date.now() + Math.random().toString(36).substr(2,5);
-
-    // Add to sidebar list
-    const item = document.createElement('div');
-    item.className = 'file-item';
-    item.id = itemId;
-    item.innerHTML = `
-      <span class="file-icon">📄</span>
-      <span class="file-name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</span>
-      <span class="file-status uploading">上传中</span>`;
+    const item = document.createElement('div'); item.className = 'file-item';
+    item.innerHTML = `<span>📄</span><span class="file-name" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</span><span class="file-status uploading">上传中</span>`;
     fileList.appendChild(item);
-
     progress.className = 'upload-progress show';
     progress.textContent = `正在上传 ${file.name}…`;
-
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('collection_name', 'ops_knowledge');
-
-      const res = await fetch(`${API_BASE}/api/v1/documents/upload`, {
-        method: 'POST',
-        body: formData,
-      });
-
+      const fd = new FormData(); fd.append('file', file); fd.append('collection_name','ops_knowledge');
+      const res = await fetch(`${API_BASE}/api/v1/documents/upload`, { method:'POST', body:fd });
       if (res.ok) {
-        const data = await res.json();
+        const d = await res.json();
         item.querySelector('.file-status').className = 'file-status ok';
-        item.querySelector('.file-status').textContent = `✓ ${data.chunks_added || '已入库'}`;
+        item.querySelector('.file-status').textContent = `✓ ${d.chunks_added||'已入库'}`;
         progress.textContent = `✓ ${file.name} 上传成功`;
       } else {
-        const err = await res.json().catch(() => ({}));
         item.querySelector('.file-status').className = 'file-status error';
         item.querySelector('.file-status').textContent = '失败';
-        progress.textContent = `✗ ${file.name}: ${err.detail || '上传失败'}`;
+        progress.textContent = `✗ ${file.name} 上传失败`;
       }
-    } catch (e) {
+    } catch(e) {
       item.querySelector('.file-status').className = 'file-status error';
       item.querySelector('.file-status').textContent = '错误';
-      progress.textContent = `✗ ${file.name}: ${e.message}`;
     }
   }
-
   setTimeout(() => { progress.className = 'upload-progress'; }, 3000);
-
-  // Reset file input
   document.getElementById('fileInput').value = '';
 }
 
-// Drag and drop support
-const uploadArea = document.getElementById('uploadArea');
-uploadArea.addEventListener('dragover', e => {
-  e.preventDefault();
-  uploadArea.style.borderColor = 'var(--accent)';
-  uploadArea.style.background = 'rgba(99,102,241,0.08)';
-});
-uploadArea.addEventListener('dragleave', () => {
-  uploadArea.style.borderColor = '';
-  uploadArea.style.background = '';
-});
-uploadArea.addEventListener('drop', e => {
-  e.preventDefault();
-  uploadArea.style.borderColor = '';
-  uploadArea.style.background = '';
-  handleUpload(e.dataTransfer.files);
-});
+// ── Cluster status ────────────────────────────────────────────────────────────
+let clusterCache = null;
+
+async function loadCluster() {
+  const body = document.getElementById('clusterBody');
+  const btn = document.getElementById('refreshBtn');
+  const ns = document.getElementById('nsFilter').value;
+  btn.classList.add('spinning');
+  body.innerHTML = `<div class="cluster-empty">⏳ 加载中…</div>`;
+
+  try {
+    // Build question for agent to fetch cluster info as structured data
+    const nsLabel = ns || '所有命名空间';
+    const question = `请依次执行以下 kubectl 命令并返回原始输出（不要做额外分析，直接输出命令结果）：
+1. kubectl get nodes -o wide
+2. kubectl get pods ${ns ? '-n ' + ns : '--all-namespaces'} -o wide
+不需要解释，直接输出两条命令的原始结果，用 "=== NODES ===" 和 "=== PODS ===" 分隔。`;
+
+    const res = await fetch(`${API_BASE}/api/v1/agent/run`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question, alert_context: 'cluster_status_query' }),
+    });
+
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    renderClusterData(data.answer, ns);
+    document.getElementById('lastUpdated').textContent = '更新于 ' + new Date().toLocaleTimeString('zh-CN');
+  } catch(e) {
+    body.innerHTML = `<div class="cluster-error">❌ 加载失败：${escapeHtml(e.message)}<br/>请确认 kubectl 已配置并能访问集群。</div>`;
+  }
+  btn.classList.remove('spinning');
+}
+
+function renderClusterData(rawOutput, ns) {
+  const body = document.getElementById('clusterBody');
+  body.innerHTML = '';
+
+  // Parse sections from agent output
+  const cleaned = stripThink(rawOutput);
+  const nodeMatch = cleaned.match(/=== NODES ===([\s\S]*?)(?:=== PODS ===|$)/i);
+  const podMatch = cleaned.match(/=== PODS ===([\s\S]*?)$/i);
+
+  const nodeText = nodeMatch ? nodeMatch[1].trim() : '';
+  const podText = podMatch ? podMatch[1].trim() : '';
+
+  // Render nodes
+  body.appendChild(renderSection('🖥️ 节点状态', parseKubectlNodes(nodeText), 'node'));
+  // Render pods
+  body.appendChild(renderSection('📦 Pod 列表', parseKubectlPods(podText), 'pod'));
+
+  // If parsing failed (agent gave prose instead of raw output), show raw text
+  if (!nodeText && !podText) {
+    body.innerHTML = '';
+    const raw = document.createElement('div');
+    raw.className = 'cluster-section';
+    raw.innerHTML = `<div class="cluster-section-header"><span class="cluster-section-title">📋 集群输出</span></div>
+      <div style="padding:14px 16px;font-size:12px;font-family:monospace;color:var(--text-dim);white-space:pre-wrap;word-break:break-word;">${escapeHtml(cleaned)}</div>`;
+    body.appendChild(raw);
+  }
+}
+
+function renderSection(title, rows, type) {
+  const sec = document.createElement('div');
+  sec.className = 'cluster-section';
+
+  if (!rows || rows.length === 0) {
+    sec.innerHTML = `<div class="cluster-section-header"><span class="cluster-section-title">${title} <span class="cluster-count">0</span></span></div><div class="cluster-empty">暂无数据</div>`;
+    return sec;
+  }
+
+  const countEl = `<span class="cluster-count">${rows.length}</span>`;
+
+  let tableHtml = '';
+  if (type === 'node') {
+    tableHtml = `<table class="k8s-table"><thead><tr><th>节点名</th><th>状态</th><th>角色</th><th>版本</th><th>内部 IP</th><th>运行时</th></tr></thead><tbody>`;
+    rows.forEach(r => {
+      const statusPill = pillHtml(r.status, r.status.toLowerCase());
+      tableHtml += `<tr><td><strong>${escapeHtml(r.name)}</strong></td><td>${statusPill}</td><td>${escapeHtml(r.roles||'—')}</td><td>${escapeHtml(r.version||'—')}</td><td style="font-family:monospace;font-size:11px">${escapeHtml(r.ip||'—')}</td><td style="font-size:11px;color:var(--text-dim)">${escapeHtml(r.os||'—')}</td></tr>`;
+    });
+    tableHtml += `</tbody></table>`;
+  } else {
+    tableHtml = `<table class="k8s-table"><thead><tr><th>命名空间</th><th>Pod 名称</th><th>状态</th><th>重启次数</th><th>节点</th><th>IP</th></tr></thead><tbody>`;
+    rows.forEach(r => {
+      const cls = r.status.toLowerCase().replace(/\s+/g,'');
+      const statusPill = pillHtml(r.status, cls);
+      const restartColor = parseInt(r.restarts) > 5 ? 'color:var(--danger)' : parseInt(r.restarts) > 0 ? 'color:var(--warn)' : '';
+      tableHtml += `<tr><td style="color:var(--text-dim);font-size:11px">${escapeHtml(r.namespace||'—')}</td><td style="font-family:monospace;font-size:12px">${escapeHtml(r.name)}</td><td>${statusPill}</td><td style="font-size:12px;${restartColor}">${escapeHtml(r.restarts||'0')}</td><td style="font-size:11px;color:var(--text-dim)">${escapeHtml(r.node||'—')}</td><td style="font-family:monospace;font-size:11px;color:var(--text-dim)">${escapeHtml(r.ip||'—')}</td></tr>`;
+    });
+    tableHtml += `</tbody></table>`;
+  }
+
+  sec.innerHTML = `<div class="cluster-section-header"><span class="cluster-section-title">${title} ${countEl}</span></div>${tableHtml}`;
+  return sec;
+}
+
+function pillHtml(label, cls) {
+  return `<span class="pill ${cls}">${escapeHtml(label)}</span>`;
+}
+
+function parseKubectlNodes(text) {
+  if (!text) return [];
+  const lines = text.trim().split('\n').filter(l => l.trim() && !l.startsWith('NAME'));
+  return lines.map(line => {
+    const cols = line.trim().split(/\s+/);
+    return { name: cols[0]||'', status: cols[1]||'Unknown', roles: cols[2]||'', version: cols[4]||'', ip: cols[5]||'', os: cols[7]||'' };
+  }).filter(r => r.name);
+}
+
+function parseKubectlPods(text) {
+  if (!text) return [];
+  const lines = text.trim().split('\n').filter(l => l.trim() && !l.startsWith('NAMESPACE') && !l.startsWith('NAME'));
+  return lines.map(line => {
+    const cols = line.trim().split(/\s+/);
+    // --all-namespaces: NAMESPACE NAME READY STATUS RESTARTS AGE IP NODE ...
+    // -n <ns>:          NAME READY STATUS RESTARTS AGE IP NODE ...
+    const hasNs = cols.length >= 8 && !/^\d+\/\d+$/.test(cols[1]) && !/^\d+\/\d+$/.test(cols[0]);
+    if (hasNs) {
+      return { namespace: cols[0], name: cols[1], ready: cols[2], status: cols[3], restarts: cols[4], ip: cols[6]||'', node: cols[7]||'' };
+    } else {
+      return { namespace: '—', name: cols[0], ready: cols[1], status: cols[2], restarts: cols[3], ip: cols[5]||'', node: cols[6]||'' };
+    }
+  }).filter(r => r.name);
+}
+
+// Drag and drop for file upload
+const uploadArea = document.querySelector('.upload-area');
+if (uploadArea) {
+  uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.style.borderColor='var(--accent)'; });
+  uploadArea.addEventListener('dragleave', () => { uploadArea.style.borderColor=''; });
+  uploadArea.addEventListener('drop', e => { e.preventDefault(); uploadArea.style.borderColor=''; handleUpload(e.dataTransfer.files); });
+}
 </script>
 </body>
 </html>
