@@ -5,7 +5,8 @@ import time
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from loguru import logger
 from prometheus_client import Counter, Histogram, make_asgi_app
 
@@ -92,9 +93,17 @@ async def health_check():
     )
 
 
+@app.get("/ui", tags=["ui"], include_in_schema=False)
+async def chat_ui():
+    """Serve the chat UI single page."""
+    import pathlib
+    ui_path = pathlib.Path(__file__).parent / "static" / "index.html"
+    return FileResponse(str(ui_path), media_type="text/html")
+
+
 @app.get("/", tags=["health"])
 async def root():
-    return {"message": "运维智能化 RAG Agent — see /docs for API reference"}
+    return {"message": "运维智能化 RAG Agent — see /docs or /ui for the chat interface"}
 
 
 if __name__ == "__main__":
