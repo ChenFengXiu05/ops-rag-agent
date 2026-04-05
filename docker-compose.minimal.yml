@@ -17,6 +17,9 @@ services:
       - TRANSFORMERS_CACHE=/app/models
       # BGE / HuggingFace 国内镜像（hf-mirror.com 无需翻墙）
       - HF_ENDPOINT=https://hf-mirror.com
+      # 关闭 LangSmith 追踪（避免容器不断尝试访问外网产生 403 错误）
+      - LANGCHAIN_TRACING_V2=false
+      - LANGCHAIN_API_KEY=
     volumes:
       - app_data:/app/data
       - app_logs:/app/logs
