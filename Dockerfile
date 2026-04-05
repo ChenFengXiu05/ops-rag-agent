@@ -3,29 +3,33 @@ FROM python:3.11-slim
 WORKDIR /app
 
 # ── 系统依赖 ──────────────────────────────────────────────────────────────────
-# poppler-utils: PDF 解析; curl: 健康检查; kubectl: Agent 执行 k8s 命令
-RUN apt-get update && apt-get install -y --no-install-recommends \
+# poppler-utils: PDF 解析  curl: 健康检查
+# apt 使用阿里云镜像加速（国内服务器）
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list.d/debian.sources 2>/dev/null || \
+    sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list && \
+    apt-get update && apt-get install -y --no-install-recommends \
     poppler-utils \
     curl \
     ca-certificates \
-    apt-transport-https \
-    gnupg \
     && rm -rf /var/lib/apt/lists/*
 
-# ── 安装 kubectl ──────────────────────────────────────────────────────────────
-ARG KUBECTL_VERSION=v1.29.3
-RUN curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/amd64/kubectl" \
-    && chmod +x kubectl \
-    && mv kubectl /usr/local/bin/kubectl \
-    && kubectl version --client
+# ── kubectl 直接从宿主机挂载，不在镜像内安装 ────────────────────────────────
+# 见 docker-compose.minimal.yml: /usr/bin/kubectl:/usr/local/bin/kubectl:ro
 
-# ── 第一步：单独安装 CPU 版 torch（体积小 ~700MB vs GPU版 2GB+）──────────────
-# 必须在其他依赖之前装，否则 pip 会自动拉 GPU 版
+# ── pip 全局镜像 (阿里云) ───────────────────────────────────────────────────
+RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ \
+    && pip config set global.trusted-host mirrors.aliyun.com \
+    && pip config set global.timeout 120
+
+# ── 第一步：安装 CPU 版 torch（必须先装，且用 pytorch.org whl index）────────
+# --index-url 指向 pytorch.org CPU whl（确保拿到 CPU 版而不是 GPU 版）
+# --extra-index-url 指向阿里云（torch 的依赖包 networkx/sympy 等从这里下载，避免超时）
 RUN pip install --no-cache-dir \
-    torch==2.3.0 \
-    --index-url https://download.pytorch.org/whl/cpu
+    --index-url https://download.pytorch.org/whl/cpu \
+    --extra-index-url https://mirrors.aliyun.com/pypi/simple/ \
+    torch==2.3.0
 
-# ── 第二步：安装其余依赖 ──────────────────────────────────────────────────────
+# ── 第二步：安装其余依赖（走阿里云镜像）────────────────────────────────────
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 

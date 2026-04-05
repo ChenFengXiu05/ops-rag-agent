@@ -15,13 +15,17 @@ services:
       - CHROMA_PERSIST_DIR=/app/data/chroma
       - HF_HOME=/app/models
       - TRANSFORMERS_CACHE=/app/models
-      # 国内 HuggingFace 镜像（内网无法访问 HF 时启用）
-      # - HF_ENDPOINT=https://hf-mirror.com
+      # BGE / HuggingFace 国内镜像（hf-mirror.com 无需翻墙）
+      - HF_ENDPOINT=https://hf-mirror.com
     volumes:
       - app_data:/app/data
       - app_logs:/app/logs
+      # BGE 模型持久化缓存（宿主机目录，容器重建不用重新下载）
       - ./models:/app/models
-      - ${KUBECONFIG_PATH:-~/.kube/config}:/root/.kube/config:ro
+      # K8s 访问：直接挂载宿主机 kubectl 二进制（工作节点已有，无需容器内安装）
+      - /usr/bin/kubectl:/usr/local/bin/kubectl:ro
+      # K8s 集群认证配置
+      - /root/.kube:/root/.kube:ro
     restart: unless-stopped
 
 volumes:
