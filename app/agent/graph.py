@@ -15,16 +15,21 @@ from app.rag.qa_chain import get_llm
 
 
 AGENT_SYSTEM_PROMPT = """你是一名专业的 SRE 运维 Agent。
-你有以下工具可以使用：kubectl_get, kubectl_describe, kubectl_logs, query_logs, query_metrics, run_shell_command
+可用工具：kubectl_get, kubectl_describe, kubectl_logs, query_logs, query_metrics, run_shell_command
 
 工作原则：
-1. 先分析告警/问题，制定排查思路，然后逐步调用工具收集信息
-2. 高危操作（delete/restart/scale 等）必须先创建审批请求，等待人工确认
-3. 每次工具调用后分析结果，判断是否需要继续调查
-4. 最终输出：根因分析 + 已执行操作 + 结果摘要 + 后续建议
+1. 每次只调用1个工具，分析结果后决定是否继续
+2. 最多调用工具 10 次，超过后必须立即总结输出结论
+3. 高危操作（delete/restart/scale）必须先暂停等待人工审批
+4. 收集到足够信息后立即输出：问题分析 + 执行结果摘要 + 建议
+
+重要：不要重复调用同一个工具，不要无限循环。收集到关键信息后直接给出结论。
 
 安全边界：禁止执行 rm、mkfs、dd 等危险命令。
 """
+
+
+MAX_TOOL_CALLS = 10  # 最多调用工具次数，防止无限循环
 
 
 class AgentState(TypedDict):
@@ -33,6 +38,7 @@ class AgentState(TypedDict):
     action_log: list[dict[str, Any]]
     requires_approval: bool
     approval_id: str
+    tool_call_count: int  # 已调用工具次数
 
 
 def _build_llm_with_tools():
@@ -70,13 +76,22 @@ def agent_node(state: AgentState) -> AgentState:
                         "approval_id": approval_id,
                     }
 
-    return {**state, "messages": [response]}
+    # Increment tool call counter if tools are about to be called
+    new_count = state.get("tool_call_count", 0)
+    if response.tool_calls:
+        new_count += len(response.tool_calls)
+    return {**state, "messages": [response], "tool_call_count": new_count}
 
 
 def should_continue(state: AgentState) -> str:
     """Route: call tools, wait for approval, or finish."""
     if state.get("requires_approval") and not is_approved(state.get("approval_id", "")):
         return "wait_approval"
+
+    # Hard stop: too many tool calls → force finish
+    if state.get("tool_call_count", 0) >= MAX_TOOL_CALLS:
+        logger.warning(f"Agent reached max tool calls ({MAX_TOOL_CALLS}), stopping.")
+        return END
 
     last = state["messages"][-1]
     if isinstance(last, AIMessage) and last.tool_calls:
@@ -117,6 +132,7 @@ def build_agent_graph() -> Any:
     graph.add_edge("tools", "agent")
     graph.add_edge("wait_approval", END)
 
+    # recursion_limit = MAX_TOOL_CALLS * 2 + 5 (each tool call = 2 steps: agent + tool)
     return graph.compile()
 
 
@@ -143,8 +159,12 @@ async def run_agent(
         "action_log": [],
         "requires_approval": False,
         "approval_id": "",
+        "tool_call_count": 0,
     }
-    final_state = await agent.ainvoke(initial_state)
+    final_state = await agent.ainvoke(
+        initial_state,
+        config={"recursion_limit": MAX_TOOL_CALLS * 3 + 5},  # each round = agent+tool+agent
+    )
 
     # Extract final answer
     last_msg = final_state["messages"][-1]
