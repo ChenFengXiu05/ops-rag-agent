@@ -27,7 +27,7 @@ RUN pip config set global.index-url https://mirrors.aliyun.com/pypi/simple/ \
 RUN pip install --no-cache-dir \
     --index-url https://download.pytorch.org/whl/cpu \
     --extra-index-url https://mirrors.aliyun.com/pypi/simple/ \
-    torch==2.3.0
+    torch==2.6.0
 
 # ── 第二步：安装其余依赖（走阿里云镜像）────────────────────────────────────
 COPY requirements.txt .
