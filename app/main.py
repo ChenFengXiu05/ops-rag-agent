@@ -13,7 +13,7 @@ from prometheus_client import Counter, Histogram, make_asgi_app
 from app.core.config import get_settings
 from app.core.logging import setup_logging
 from app.models.response import HealthResponse
-from app.api.routes import ask, alert, documents, evaluation, agent
+from app.api.routes import ask, alert, documents, evaluation, agent, metrics as metrics_routes
 
 # ── Bootstrap ────────────────────────────────────────────────────────────────
 os.makedirs("logs", exist_ok=True)
@@ -81,6 +81,7 @@ app.include_router(alert.router, prefix=API_PREFIX)
 app.include_router(documents.router, prefix=API_PREFIX)
 app.include_router(evaluation.router, prefix=API_PREFIX)
 app.include_router(agent.router, prefix=API_PREFIX)
+app.include_router(metrics_routes.router, prefix=API_PREFIX)
 
 
 @app.get("/health", response_model=HealthResponse, tags=["health"])

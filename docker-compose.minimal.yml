@@ -1,13 +1,15 @@
 # 最小化部署：仅启动核心 RAG Agent，不含 ES / Prometheus / Grafana
-# 适合首次部署验证、资源有限的节点
+# 外部 Prometheus / Grafana 通过 .env 配置地址接入
 # 使用方式：docker compose -f docker-compose.minimal.yml up -d
 
 services:
   app:
     build: .
     container_name: ops-rag-agent
-    ports:
-      - "8000:8000"
+    # network_mode: host 让容器直接使用宿主机网络
+    # 好处：容器可直接访问宿主机上的 Prometheus(9090) / Grafana(3000) / ES(9200)
+    # 缺点：ports 映射无效，服务直接监听宿主机 8000 端口
+    network_mode: host
     env_file:
       - .env
     environment:
@@ -15,19 +17,14 @@ services:
       - CHROMA_PERSIST_DIR=/app/data/chroma
       - HF_HOME=/app/models
       - TRANSFORMERS_CACHE=/app/models
-      # BGE / HuggingFace 国内镜像（hf-mirror.com 无需翻墙）
       - HF_ENDPOINT=https://hf-mirror.com
-      # 关闭 LangSmith 追踪（避免容器不断尝试访问外网产生 403 错误）
       - LANGCHAIN_TRACING_V2=false
       - LANGCHAIN_API_KEY=
     volumes:
       - app_data:/app/data
       - app_logs:/app/logs
-      # BGE 模型持久化缓存（宿主机目录，容器重建不用重新下载）
       - ./models:/app/models
-      # K8s 访问：直接挂载宿主机 kubectl 二进制（工作节点已有，无需容器内安装）
       - /usr/bin/kubectl:/usr/local/bin/kubectl:ro
-      # K8s 集群认证配置
       - /root/.kube:/root/.kube:ro
     restart: unless-stopped
 
