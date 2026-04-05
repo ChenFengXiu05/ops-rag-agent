@@ -286,14 +286,38 @@
       background: rgba(0,0,0,0.3);
       border: 1px solid var(--border);
       border-radius: 6px;
-      padding: 10px 12px;
       overflow-x: auto;
       font-size: 12px;
       margin: 8px 0;
       font-family: "JetBrains Mono", "Fira Code", monospace;
+      position: relative;
+    }
+    .bubble pre code {
+      display: block;
+      padding: 10px 12px;
       white-space: pre-wrap;
       word-break: break-word;
+      background: transparent;
     }
+    .copy-btn {
+      position: absolute;
+      top: 6px;
+      right: 7px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      line-height: 1.6;
+    }
+    .copy-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+    .copy-btn.copied { background: var(--success); color: white; border-color: var(--success); }
     .bubble code {
       font-family: "JetBrains Mono", "Fira Code", monospace;
       font-size: 12px;
@@ -301,7 +325,6 @@
       padding: 1px 5px;
       border-radius: 3px;
     }
-    .bubble pre code { background: transparent; padding: 0; }
 
     /* Typing indicator */
     .typing-indicator {
@@ -681,8 +704,8 @@ function appendMessage(role, text, sources, meta) {
   div.className = `message ${role}`;
 
   const avatar = role === 'user' ? '👤' : '🤖';
-  const escapedText = escapeHtml(text);
-  const formatted = formatText(escapedText);
+  // formatText handles its own escaping; only escape for user bubbles (no markdown needed)
+  const formatted = role === 'user' ? escapeHtml(text).replace(/\n/g, '<br/>') : formatText(text);
 
   let sourcesHtml = '';
   if (sources && sources.length > 0) {
@@ -751,16 +774,73 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
-function formatText(text) {
-  // Code blocks (```...```)
-  text = text.replace(/```([\s\S]*?)```/g, (_, code) => `<pre><code>${code.trim()}</code></pre>`);
-  // Inline code
-  text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
-  // Bold
-  text = text.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  // Line breaks
-  text = text.replace(/\n/g, '<br/>');
-  return text;
+function stripThink(text) {
+  // Remove <think>...</think> blocks (model reasoning, not shown to user)
+  return text.replace(/<think>[\s\S]*?<\/think>/gi, '').trim();
+}
+
+function formatText(rawText) {
+  // 1. Strip model thinking blocks
+  let text = stripThink(rawText);
+
+  // 2. Escape HTML (except we handle code blocks specially)
+  // Split on code fences first to avoid escaping code content incorrectly
+  const parts = text.split(/(```[\s\S]*?```)/g);
+  let html = parts.map((part, i) => {
+    if (i % 2 === 1) {
+      // Code block — extract optional lang and code body
+      const match = part.match(/^```(\w*)\n?([\s\S]*?)```$/);
+      const lang = match ? match[1] : '';
+      const code = match ? match[2].trim() : part.slice(3, -3).trim();
+      const escaped = escapeHtml(code);
+      const id = 'cb_' + Math.random().toString(36).substr(2, 8);
+      return `<div style="position:relative">` +
+        `<pre><code id="${id}">${escaped}</code></pre>` +
+        `<button class="copy-btn" onclick="copyCode('${id}', this)" title="复制代码">` +
+        `📋 复制</button></div>`;
+    } else {
+      let t = escapeHtml(part);
+      // Inline code
+      t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
+      // Bold
+      t = t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+      // Headers
+      t = t.replace(/^### (.+)$/gm, '<strong style="font-size:13px;color:var(--text)">$1</strong>');
+      t = t.replace(/^## (.+)$/gm, '<strong style="font-size:14px;color:var(--text)">$1</strong>');
+      t = t.replace(/^# (.+)$/gm, '<strong style="font-size:15px;color:var(--text)">$1</strong>');
+      // Numbered list
+      t = t.replace(/^\d+\. (.+)$/gm, '<span style="display:block;padding-left:1.2em;text-indent:-1.2em">$&</span>');
+      // Line breaks
+      t = t.replace(/\n/g, '<br/>');
+      return t;
+    }
+  }).join('');
+
+  return html;
+}
+
+function copyCode(id, btn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  navigator.clipboard.writeText(el.innerText).then(() => {
+    btn.classList.add('copied');
+    btn.textContent = '✓ 已复制';
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.innerHTML = '📋 复制';
+    }, 2000);
+  }).catch(() => {
+    // fallback for older browsers
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    window.getSelection().removeAllRanges();
+    window.getSelection().addRange(range);
+    document.execCommand('copy');
+    window.getSelection().removeAllRanges();
+    btn.classList.add('copied');
+    btn.textContent = '✓ 已复制';
+    setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = '📋 复制'; }, 2000);
+  });
 }
 
 // ── File upload ──────────────────────────────────────────────────────────────
