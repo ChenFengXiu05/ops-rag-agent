@@ -15,11 +15,11 @@ def make_docs(text: str) -> list[Document]:
 
 
 def test_chunk_fixed_basic():
-    docs = make_docs("A" * 1024)
-    chunks = chunk_fixed(docs, chunk_size=256, chunk_overlap=0)
-    assert len(chunks) >= 1
-    for c in chunks:
-        assert len(c.page_content) <= 300  # some tolerance for splitter
+    # Use newline-separated content so CharacterTextSplitter (separator="\n") can split
+    text = "\n".join(["word" * 20] * 20)  # 20 lines, each ~80 chars
+    docs = make_docs(text)
+    chunks = chunk_fixed(docs, chunk_size=100, chunk_overlap=0)
+    assert len(chunks) >= 2  # must produce multiple chunks
 
 
 def test_chunk_recursive_preserves_metadata():

@@ -1,11 +1,13 @@
 """Pydantic models for Prometheus Alertmanager webhook."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class AlertLabel(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
     alertname: str
     severity: str = "warning"
     namespace: str = ""
@@ -13,17 +15,13 @@ class AlertLabel(BaseModel):
     node: str = ""
     job: str = ""
 
-    class Config:
-        extra = "allow"
-
 
 class AlertAnnotation(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
     summary: str = ""
     description: str = ""
     runbook_url: str = ""
-
-    class Config:
-        extra = "allow"
 
 
 class Alert(BaseModel):
@@ -61,4 +59,4 @@ class DisposalRecord(BaseModel):
     executed_actions: list[dict[str, Any]] = []
     human_rating: int | None = None  # 1-5
     human_feedback: str = ""
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

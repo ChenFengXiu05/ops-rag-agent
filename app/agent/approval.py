@@ -1,13 +1,17 @@
 """Human approval node for high-risk agent actions."""
 
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from loguru import logger
 
 # In-memory approval store (use Redis/DB in production)
 _pending_approvals: dict[str, dict[str, Any]] = {}
+
+
+def _now() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 def create_approval_request(
@@ -21,14 +25,15 @@ def create_approval_request(
     The agent must pause and wait for /api/v1/approval/{action_id} to be called.
     """
     action_id = str(uuid.uuid4())
+    now = _now()
     _pending_approvals[action_id] = {
         "action_id": action_id,
         "action": action,
         "parameters": parameters,
         "alert_context": alert_context,
         "status": "pending",  # pending | approved | rejected
-        "created_at": datetime.utcnow().isoformat(),
-        "expires_at": (datetime.utcnow() + timedelta(minutes=ttl_minutes)).isoformat(),
+        "created_at": now.isoformat(),
+        "expires_at": (now + timedelta(minutes=ttl_minutes)).isoformat(),
         "approver": None,
         "comment": "",
     }
@@ -56,16 +61,15 @@ def is_approved(action_id: str) -> bool:
     record = _pending_approvals.get(action_id)
     if not record:
         return False
-    # Check expiry
     expires = datetime.fromisoformat(record["expires_at"])
-    if datetime.utcnow() > expires:
+    if _now() > expires:
         record["status"] = "expired"
         return False
     return record["status"] == "approved"
 
 
 def list_pending() -> list[dict]:
-    now = datetime.utcnow()
+    now = _now()
     return [
         r for r in _pending_approvals.values()
         if r["status"] == "pending"
