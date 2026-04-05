@@ -21,8 +21,12 @@ services:
       - LANGCHAIN_TRACING_V2=false
       - LANGCHAIN_API_KEY=
     volumes:
+      # 挂载宿主机代码目录 → git pull 后 restart 即生效，无需重新 build
+      - .:/app
+      # 数据和日志用命名卷持久化（覆盖上面挂载里的同名目录）
       - app_data:/app/data
       - app_logs:/app/logs
+      # BGE 模型缓存
       - ./models:/app/models
       - /usr/bin/kubectl:/usr/local/bin/kubectl:ro
       - /root/.kube:/root/.kube:ro
