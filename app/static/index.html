@@ -521,12 +521,45 @@ function appendTyping(mode) {
   const msgs = document.getElementById(mode + '-messages');
   const div = document.createElement('div');
   div.className = 'message bot'; div.id = id;
-  div.innerHTML = `<div class="avatar">⏳</div><div class="bubble"><div class="typing-indicator"><span></span><span></span><span></span></div></div>`;
+  const isAgent = mode === 'agent';
+  div.innerHTML = `<div class="avatar">⏳</div><div class="bubble">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="typing-indicator"><span></span><span></span><span></span></div>
+      <span id="${id}_label" style="font-size:12px;color:var(--text-dim)">${isAgent ? '🤖 Agent 正在调用工具…' : '🔍 检索知识库…'}</span>
+    </div>
+    <div id="${id}_timer" style="font-size:11px;color:var(--text-dim);margin-top:4px;">已等待 <span id="${id}_sec">0</span> 秒${isAgent ? '（Agent 多轮工具调用，模型响应约 15s/次，请耐心等待）' : ''}</div>
+  </div>`;
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
+
+  // Start elapsed timer
+  const startTime = Date.now();
+  const timerId = setInterval(() => {
+    const secEl = document.getElementById(id + '_sec');
+    if (!secEl) { clearInterval(timerId); return; }
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    secEl.textContent = elapsed;
+    // Update label hint based on elapsed time
+    if (isAgent) {
+      const labelEl = document.getElementById(id + '_label');
+      if (labelEl) {
+        if (elapsed < 20) labelEl.textContent = '🤖 Agent 正在分析问题…';
+        else if (elapsed < 40) labelEl.textContent = '🔧 正在执行 kubectl 命令…';
+        else if (elapsed < 80) labelEl.textContent = '🧠 LLM 正在汇总结果…';
+        else labelEl.textContent = '⏳ 仍在处理中，请稍候…';
+      }
+    }
+  }, 1000);
+  div._timerId = timerId;
   return id;
 }
-function removeTyping(id) { const el = document.getElementById(id); if (el) el.remove(); }
+function removeTyping(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    if (el._timerId) clearInterval(el._timerId);
+    el.remove();
+  }
+}
 
 // ── Text formatting ───────────────────────────────────────────────────────────
 function escapeHtml(s) {

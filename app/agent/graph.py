@@ -161,10 +161,23 @@ async def run_agent(
         "approval_id": "",
         "tool_call_count": 0,
     }
-    final_state = await agent.ainvoke(
-        initial_state,
-        config={"recursion_limit": MAX_TOOL_CALLS * 3 + 5},  # each round = agent+tool+agent
-    )
+    import asyncio
+    try:
+        final_state = await asyncio.wait_for(
+            agent.ainvoke(
+                initial_state,
+                config={"recursion_limit": MAX_TOOL_CALLS * 3 + 5},
+            ),
+            timeout=180,  # 3 分钟超时，防止无限等待
+        )
+    except asyncio.TimeoutError:
+        logger.error("Agent execution timed out after 180s")
+        return {
+            "answer": "⏱️ Agent 执行超时（超过3分钟）。\n\n可能原因：\n- LLM 响应较慢，工具调用轮次过多\n- kubectl 命令挂起\n\n建议：换一个更具体的问题，例如「查看 default 命名空间的 Pod」",
+            "requires_approval": False,
+            "approval_id": "",
+            "action_count": 0,
+        }
 
     # Extract final answer
     last_msg = final_state["messages"][-1]
